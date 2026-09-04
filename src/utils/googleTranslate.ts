@@ -36,7 +36,6 @@ export function initGoogleTranslateScript(): void {
           {
             pageLanguage: "en",
             includedLanguages: "en,hi,pa",
-            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false,
           },
           "google_translate_element"
@@ -131,6 +130,11 @@ export function applyGoogleTranslateLanguage(targetLang: string): void {
     setCookie(`googtrans=${cookieVal}; path=/; domain=.${domain}; ${maxAge}`);
   }
 
+  // Update HTML document language attribute for Chrome and browsers
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.lang = validLang;
+  }
+
   // 3. If restoring original English, click restore if Google Translate banner exists
   if (validLang === "en") {
     const bannerIframe = document.querySelector(".goog-te-banner-frame") as HTMLIFrameElement | null;
@@ -147,11 +151,18 @@ export function applyGoogleTranslateLanguage(targetLang: string): void {
     const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
     if (select) {
       const desiredValue = validLang === "en" ? "" : validLang;
-      if (select.value !== desiredValue) {
-        select.value = desiredValue;
-      }
-      select.dispatchEvent(new Event("change", { bubbles: true }));
+      select.value = desiredValue;
+
+      // Dispatch multiple events for cross-browser & Chrome compatibility
+      select.dispatchEvent(new Event("change", { bubbles: true, cancelable: true }));
       select.dispatchEvent(new Event("input", { bubbles: true }));
+
+      try {
+        const evt = document.createEvent("HTMLEvents");
+        evt.initEvent("change", true, true);
+        select.dispatchEvent(evt);
+      } catch (_) {}
+
       if (typeof (select as any).onchange === "function") {
         (select as any).onchange();
       }
