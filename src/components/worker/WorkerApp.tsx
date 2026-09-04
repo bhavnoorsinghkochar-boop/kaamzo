@@ -854,6 +854,13 @@ export const WorkerApp: React.FC<WorkerAppProps> = ({ isEmbedded = false }) => {
         console.warn("User cancelled the Google popup sign-in.");
         return;
       }
+      if (error?.code === "auth/unauthorized-domain") {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "your Vercel domain";
+        setAuthError(
+          `Unauthorized Domain (${domain}): Please add "${domain}" to Firebase Console -> Authentication -> Settings -> Authorized domains (Project ID: nifty-backup-mc9s2).`
+        );
+        return;
+      }
       console.error("Google Sign-In Error:", error);
       setAuthError(error.message || "Google Sign-In failed.");
     }

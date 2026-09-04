@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { ShieldCheck, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Loader2, Sparkles, CheckCircle2, AlertCircle, Copy, Check, ExternalLink } from "lucide-react";
 import { playSound } from "../../utils/audio";
 import { useTranslation } from "react-i18next";
 
@@ -27,6 +27,115 @@ export const GoogleSSOButton: React.FC<GoogleSSOButtonProps> = ({
   const { signInWithGoogleSSO, showNotification } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
+  const currentHostname =
+    typeof window !== "undefined" ? window.location.hostname : "your-vercel-domain.vercel.app";
+
+  const isUnauthorizedDomain =
+    errorMessage &&
+    (errorMessage.toLowerCase().includes("unauthorized domain") ||
+      errorMessage.toLowerCase().includes("auth/unauthorized-domain"));
+
+  const handleCopyHostname = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(currentHostname);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2500);
+    }
+  };
+
+  const renderErrorBanner = () => {
+    if (!errorMessage) return null;
+
+    if (isUnauthorizedDomain) {
+      return (
+        <div className="mt-2.5 p-3.5 rounded-2xl bg-amber-50 dark:bg-[#251E12] border border-amber-300 dark:border-amber-700/80 text-left text-xs space-y-2.5 animate-in fade-in shadow-xs">
+          <div className="flex items-start gap-2.5 text-amber-950 dark:text-amber-200 font-bold">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-extrabold">{t("Domain Authorization Required in Firebase")}</span>
+              <p className="text-[11px] font-normal text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+                {t("Google SSO was opened from a domain that is not yet registered in your Firebase project's OAuth whitelist (Project: nifty-backup-mc9s2).")}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-white dark:bg-[#151515] px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-900/60 font-mono text-[11px]">
+            <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+              {currentHostname}
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyHostname}
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/60 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-200 transition cursor-pointer"
+            >
+              {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+              <span>{copiedDomain ? t("Copied!") : t("Copy Domain")}</span>
+            </button>
+          </div>
+
+          <div className="text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
+            <div className="font-semibold text-slate-800 dark:text-slate-200">{t("How to fix in 30 seconds:")}</div>
+            <ol className="list-decimal list-inside space-y-1 text-[10.5px]">
+              <li>
+                {t("Open Firebase Console -> Authentication -> Settings -> Authorized domains")}
+              </li>
+              <li>
+                {t("Click 'Add domain' and add ")}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText("vercel.app");
+                    setCopiedDomain(true);
+                    setTimeout(() => setCopiedDomain(false), 2500);
+                  }}
+                  className="font-mono bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 px-1.5 py-0.5 rounded font-bold underline cursor-pointer"
+                >
+                  vercel.app
+                </button>
+                <span className="text-[10px] text-slate-500 ml-1">
+                  ({t("Authorizes ALL Vercel preview & production URLs at once!")})
+                </span>
+              </li>
+              <li>
+                {t("Also add your exact domain: ")}
+                <code className="bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded font-mono">
+                  {currentHostname}
+                </code>
+              </li>
+            </ol>
+          </div>
+
+          <div className="flex items-center justify-between pt-1 border-t border-amber-200/70 dark:border-amber-900/50">
+            <a
+              href="https://console.firebase.google.com/project/nifty-backup-mc9s2/authentication/settings"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-2 transition"
+            >
+              <span>{t("Open Firebase Auth Settings")}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
+            >
+              {t("Dismiss")}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 text-center font-medium">
+        ⚠️ {errorMessage}
+      </p>
+    );
+  };
 
   const handleSSOClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -124,11 +233,7 @@ export const GoogleSSOButton: React.FC<GoogleSSOButtonProps> = ({
             <span> {t("Fast Sign-In")} </span>
           </div>
         </button>
-        {errorMessage && (
-          <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 text-left font-medium px-2">
-            ⚠️ {errorMessage}
-          </p>
-        )}
+        {renderErrorBanner()}
       </div>
     );
   }
@@ -153,11 +258,7 @@ export const GoogleSSOButton: React.FC<GoogleSSOButtonProps> = ({
           <span className="text-[10px] bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-extrabold px-1.5 py-0.5 rounded">
              {t("Google SSO")} </span>
         </button>
-        {errorMessage && (
-          <p className="text-xs text-rose-600 dark:text-rose-400 mt-1.5 text-center font-medium">
-            ⚠️ {errorMessage}
-          </p>
-        )}
+        {renderErrorBanner()}
       </div>
     );
   }
@@ -178,11 +279,7 @@ export const GoogleSSOButton: React.FC<GoogleSSOButtonProps> = ({
           )}
           <span>{isLoading ? "Signing in..." : label}</span>
         </button>
-        {errorMessage && (
-          <p className="text-xs text-rose-400 mt-1.5 text-center font-medium">
-            ⚠️ {errorMessage}
-          </p>
-        )}
+        {renderErrorBanner()}
       </div>
     );
   }
@@ -203,11 +300,7 @@ export const GoogleSSOButton: React.FC<GoogleSSOButtonProps> = ({
         )}
         <span>{isLoading ? "Connecting SSO..." : label}</span>
       </button>
-      {errorMessage && (
-        <p className="text-xs text-rose-600 dark:text-rose-400 mt-1.5 text-center font-medium">
-          ⚠️ {errorMessage}
-        </p>
-      )}
+      {renderErrorBanner()}
     </div>
   );
 };

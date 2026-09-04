@@ -2660,6 +2660,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         console.warn("User cancelled the Google popup sign-in.");
         return { success: false, error: "Popup closed by user." };
       }
+      if (err?.code === "auth/unauthorized-domain") {
+        const domain = typeof window !== "undefined" ? window.location.hostname : "your Vercel domain";
+        const msg = `Unauthorized Domain (${domain}). To fix: In Firebase Console -> Authentication -> Settings -> Authorized domains, add "${domain}".`;
+        console.warn("Google SSO Unauthorized Domain:", msg);
+        return { success: false, error: msg };
+      }
       console.error("Google SSO Login Error:", err);
       return {
         success: false,

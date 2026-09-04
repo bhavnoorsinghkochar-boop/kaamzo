@@ -6,7 +6,6 @@ import translations from '../translations.json';
 const dicts = {
   hi: translations.hi.translation,
   pa: translations.pa.translation,
-  ja: (translations as any).ja?.translation || {}
 };
 
 export const AutoTranslator: React.FC = () => {
@@ -14,7 +13,7 @@ export const AutoTranslator: React.FC = () => {
 
   useEffect(() => {
     const isEn = currentLanguage === 'en';
-    const dict = dicts[currentLanguage as 'hi' | 'pa' | 'ja'];
+    const dict = dicts[currentLanguage as 'hi' | 'pa'];
     
     // If we're not English and we don't have a dict, do nothing.
     if (!isEn && !dict) return;

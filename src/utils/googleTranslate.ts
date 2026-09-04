@@ -1,85 +1,55 @@
 // Google Translate Integration Utility
 // Supports Chrome Google Translate engine, googtrans cookie synchronization,
-// and live translation of text, interface elements, and custom lyrics.
+// and automatic translation for English (en), Hindi (hi), and Punjabi (pa).
+
+export type SupportedTranslateLanguage = "en" | "hi" | "pa";
 
 export interface TranslationResult {
   originalText: string;
   translatedText: string;
-  romaji?: string;
   sourceLang: string;
   targetLang: string;
 }
 
-// Japanese lyric/musical/phrase translation keywords & common vocabulary dictionary
-const JA_VOCABULARY: Record<string, string> = {
-  // Common lyric & emotional words
-  "love": "愛 (ai)",
-  "heart": "心 (kokoro)",
-  "dream": "夢 (yume)",
-  "night": "夜 (yoru)",
-  "sky": "空 (sora)",
-  "star": "星 (hoshi)",
-  "sun": "太陽 (taiyou)",
-  "moon": "月 (tsuki)",
-  "rain": "雨 (ame)",
-  "wind": "風 (kaze)",
-  "tears": "涙 (namida)",
-  "smile": "笑顔 (egao)",
-  "forever": "永遠に (eien ni)",
-  "together": "一緒に (issho ni)",
-  "melody": "旋律 (senritsu)",
-  "song": "歌 (uta)",
-  "music": "音楽 (ongaku)",
-  "voice": "声 (koe)",
-  "light": "光 (hikari)",
-  "shadow": "影 (kage)",
-  "world": "世界 (sekai)",
-  "time": "時間 (jikan)",
-  "future": "未来 (mirai)",
-  "hope": "希望 (kibou)",
-  "freedom": "自由 (jiyuu)",
-  "life": "人生 (jinsei)",
-  "journey": "旅 (tabi)",
-  "walk": "歩く (aruku)",
-  "run": "走る (hashiru)",
-  "fly": "飛ぶ (tobu)",
-  "shine": "輝く (kagayaku)",
-  "listen": "聞く (kiku)",
-  "sing": "歌う (utau)",
-  "dance": "踊る (odoru)",
-  "worker": "労働者 (roudousha)",
-  "work": "仕事 (shigoto)",
-  "daily wage": "日給 (nikkyuu)",
-  "job": "仕事・求人 (kyuujin)",
-  "money": "お金 (okane)",
-  "friend": "友達 (tomodachi)",
-  "peace": "平和 (heiwa)",
-  "strength": "力 (chikara)",
-  "courage": "勇気 (yuuki)",
-  "today": "今日 (kyou)",
-  "tomorrow": "明日 (ashita)",
-  "always": "いつも (itsumo)",
-};
+// Global reference holder for queued target language
+declare global {
+  interface Window {
+    google?: any;
+    googleTranslateElementInit?: () => void;
+    __applyGoogleTranslate?: (lang: string) => void;
+    __targetGoogleTranslateLang?: string;
+  }
+}
 
 /**
  * Initializes Google Translate element script if not yet loaded in the browser.
+ * Configured strictly for English, Hindi, and Punjabi (en, hi, pa).
  */
 export function initGoogleTranslateScript(): void {
   if (typeof window === "undefined") return;
 
   // Define the global callback if missing
-  if (!(window as any).googleTranslateElementInit) {
-    (window as any).googleTranslateElementInit = function () {
-      if ((window as any).google && (window as any).google.translate) {
-        new (window as any).google.translate.TranslateElement(
+  if (!window.googleTranslateElementInit) {
+    window.googleTranslateElementInit = function () {
+      if (window.google && window.google.translate) {
+        new window.google.translate.TranslateElement(
           {
             pageLanguage: "en",
-            includedLanguages: "en,ja,hi,pa",
-            layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
+            includedLanguages: "en,hi,pa",
+            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false,
           },
           "google_translate_element"
         );
+
+        // Auto-apply current or saved language as soon as widget loads
+        const target =
+          window.__targetGoogleTranslateLang ||
+          localStorage.getItem("kaamzo_language") ||
+          "en";
+        if (target && target !== "en") {
+          applyGoogleTranslateLanguage(target);
+        }
       }
     };
   }
@@ -88,7 +58,14 @@ export function initGoogleTranslateScript(): void {
   if (!document.getElementById("google_translate_element")) {
     const el = document.createElement("div");
     el.id = "google_translate_element";
-    el.style.display = "none";
+    el.style.position = "absolute";
+    el.style.top = "-9999px";
+    el.style.left = "-9999px";
+    el.style.width = "1px";
+    el.style.height = "1px";
+    el.style.opacity = "0";
+    el.style.pointerEvents = "none";
+    el.setAttribute("aria-hidden", "true");
     document.body.appendChild(el);
   }
 
@@ -106,34 +83,56 @@ export function initGoogleTranslateScript(): void {
   }
 }
 
+let activeObserver: MutationObserver | null = null;
+let activeInterval: any = null;
+
 /**
  * Applies Google Translate to the current page.
- * Sets the 'googtrans' cookie used by Google Translate in Chrome / Web,
- * and updates the .goog-te-combo dropdown element.
+ * Sets the 'googtrans' cookie used by Google Translate,
+ * and updates the .goog-te-combo dropdown element automatically.
  */
 export function applyGoogleTranslateLanguage(targetLang: string): void {
   if (typeof window === "undefined") return;
 
-  const domain = window.location.hostname;
-  const cookieVal = targetLang === "en" ? "/en/en" : `/en/${targetLang}`;
+  // Enforce supported languages: only en, hi, pa
+  const validLang = targetLang === "hi" || targetLang === "pa" ? targetLang : "en";
+  window.__targetGoogleTranslateLang = validLang;
 
-  // Set cookie for current root path and domains
-  document.cookie = `googtrans=${cookieVal}; path=/; max-age=31536000;`;
-  if (targetLang === "en") {
-    // Also clear cookie to ensure default state
-    document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-  }
+  const domain = window.location.hostname;
+  const cookieVal = validLang === "en" ? "/en/en" : `/en/${validLang}`;
+
+  // Helper to set cookie
+  const setCookie = (cookieStr: string) => {
+    try {
+      document.cookie = cookieStr;
+    } catch (_) {}
+  };
+
+  // 1. Clear previous or conflicting cookies
+  const expireDate = "expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+  setCookie(`googtrans=; path=/; ${expireDate}`);
   if (domain && domain !== "localhost") {
-    document.cookie = `googtrans=${cookieVal}; path=/; domain=${domain}; max-age=31536000;`;
-    document.cookie = `googtrans=${cookieVal}; path=/; domain=.${domain}; max-age=31536000;`;
-    if (targetLang === "en") {
-      document.cookie = `googtrans=; path=/; domain=${domain}; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
-      document.cookie = `googtrans=; path=/; domain=.${domain}; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+    setCookie(`googtrans=; path=/; domain=${domain}; ${expireDate}`);
+    setCookie(`googtrans=; path=/; domain=.${domain}; ${expireDate}`);
+    if (domain.includes(".")) {
+      const parts = domain.split(".");
+      if (parts.length >= 2) {
+        const rootDomain = parts.slice(-2).join(".");
+        setCookie(`googtrans=; path=/; domain=.${rootDomain}; ${expireDate}`);
+      }
     }
   }
 
-  // If restoring original English, check if Google Translate banner has a restore/show original button
-  if (targetLang === "en") {
+  // 2. Set active cookie
+  const maxAge = "max-age=31536000; SameSite=Lax;";
+  setCookie(`googtrans=${cookieVal}; path=/; ${maxAge}`);
+  if (domain && domain !== "localhost") {
+    setCookie(`googtrans=${cookieVal}; path=/; domain=${domain}; ${maxAge}`);
+    setCookie(`googtrans=${cookieVal}; path=/; domain=.${domain}; ${maxAge}`);
+  }
+
+  // 3. If restoring original English, click restore if Google Translate banner exists
+  if (validLang === "en") {
     const bannerIframe = document.querySelector(".goog-te-banner-frame") as HTMLIFrameElement | null;
     if (bannerIframe && bannerIframe.contentDocument) {
       const restoreBtn = bannerIframe.contentDocument.querySelector(".goog-close-link") as HTMLElement | null;
@@ -143,156 +142,90 @@ export function applyGoogleTranslateLanguage(targetLang: string): void {
     }
   }
 
-  // Attempt to select language in Google Translate combobox
-  const triggerCombo = () => {
+  // 4. Trigger the Google Translate dropdown (.goog-te-combo)
+  const triggerCombo = (): boolean => {
     const select = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
     if (select) {
-      const desiredValue = targetLang === "en" ? "" : targetLang;
-      select.value = desiredValue;
+      const desiredValue = validLang === "en" ? "" : validLang;
+      if (select.value !== desiredValue) {
+        select.value = desiredValue;
+      }
       select.dispatchEvent(new Event("change", { bubbles: true }));
       select.dispatchEvent(new Event("input", { bubbles: true }));
+      if (typeof (select as any).onchange === "function") {
+        (select as any).onchange();
+      }
       return true;
     }
     return false;
   };
 
-  if (!triggerCombo()) {
-    // Retry periodically in case Google script is still injecting the DOM element
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (triggerCombo() || attempts > 15) {
-        clearInterval(interval);
-      }
-    }, 200);
+  // Clear previous timers or observers
+  if (activeInterval) {
+    clearInterval(activeInterval);
+    activeInterval = null;
+  }
+  if (activeObserver) {
+    activeObserver.disconnect();
+    activeObserver = null;
   }
 
-  // Dispatch custom event for reactive UI components
+  const success = triggerCombo();
+
+  // If combo not ready yet (script still loading), poll & observe DOM until it appears
+  if (!success) {
+    let attempts = 0;
+    activeInterval = setInterval(() => {
+      attempts++;
+      if (triggerCombo() || attempts > 35) {
+        clearInterval(activeInterval);
+        activeInterval = null;
+        if (activeObserver) {
+          activeObserver.disconnect();
+          activeObserver = null;
+        }
+      }
+    }, 150);
+
+    // Also observe for element injection
+    if (typeof MutationObserver !== "undefined") {
+      activeObserver = new MutationObserver(() => {
+        if (triggerCombo()) {
+          if (activeInterval) {
+            clearInterval(activeInterval);
+            activeInterval = null;
+          }
+          activeObserver?.disconnect();
+          activeObserver = null;
+        }
+      });
+      activeObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
+  // Dispatch custom event for app reactive listeners
   window.dispatchEvent(
     new CustomEvent("googleTranslateChanged", {
-      detail: { lang: targetLang },
+      detail: { lang: validLang },
     })
   );
+}
+
+// Expose globally so index.html inline script can trigger it
+if (typeof window !== "undefined") {
+  window.__applyGoogleTranslate = applyGoogleTranslateLanguage;
 }
 
 /**
  * Reads the active Google Translate target language from cookies.
  */
-export function getActiveGoogleTranslateLanguage(): string {
+export function getActiveGoogleTranslateLanguage(): SupportedTranslateLanguage {
   if (typeof document === "undefined") return "en";
   const match = document.cookie.match(/(?:^|;\s*)googtrans=([^;]+)/);
   if (match && match[1]) {
     const parts = match[1].split("/");
-    return parts[parts.length - 1] || "en";
+    const lang = parts[parts.length - 1];
+    if (lang === "hi" || lang === "pa") return lang;
   }
   return "en";
-}
-
-/**
- * Translates custom user text or song lyrics into Japanese (or target language).
- * Generates natural Japanese text, phrase mapping, and pronunciation guide.
- */
-export function translateLyricsOrText(
-  inputText: string,
-  targetLang: string = "ja"
-): TranslationResult {
-  const text = inputText.trim();
-  if (!text) {
-    return {
-      originalText: "",
-      translatedText: "",
-      sourceLang: "en",
-      targetLang,
-    };
-  }
-
-  if (targetLang === "en") {
-    return {
-      originalText: text,
-      translatedText: text,
-      sourceLang: "auto",
-      targetLang: "en",
-    };
-  }
-
-  if (targetLang === "ja") {
-    // Check known lyric phrases or split lines
-    const lines = text.split("\n");
-    const translatedLines: string[] = [];
-    const romajiLines: string[] = [];
-
-    lines.forEach((line) => {
-      let trimmed = line.trim();
-      if (!trimmed) {
-        translatedLines.push("");
-        romajiLines.push("");
-        return;
-      }
-
-      // Sentence level translations for common expressions
-      const lower = trimmed.toLowerCase();
-      let jaLine = "";
-      let romajiLine = "";
-
-      if (lower.includes("hello") || lower.includes("hi")) {
-        jaLine = "こんにちは (Konnichiwa)";
-      } else if (lower.includes("how are you")) {
-        jaLine = "お元気ですか (Ogenki desu ka)";
-      } else if (lower.includes("thank you")) {
-        jaLine = "ありがとうございます (Arigatou gozaimasu)";
-      } else if (lower.includes("welcome")) {
-        jaLine = "ようこそ (Youkoso)";
-      } else if (lower.includes("i love you")) {
-        jaLine = "愛しています (Aishiteimasu)";
-      } else if (lower.includes("goodbye") || lower.includes("bye")) {
-        jaLine = "さようなら (Sayounara)";
-      } else {
-        // Translate words based on lyric vocabulary
-        const words = trimmed.split(/\s+/);
-        const translatedWords: string[] = [];
-        const romajiWords: string[] = [];
-
-        words.forEach((word) => {
-          const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, "");
-          if (JA_VOCABULARY[cleanWord]) {
-            const entry = JA_VOCABULARY[cleanWord];
-            const parts = entry.match(/^(.+?)\s*\((.+?)\)$/);
-            if (parts) {
-              translatedWords.push(parts[1]);
-              romajiWords.push(parts[2]);
-            } else {
-              translatedWords.push(entry);
-              romajiWords.push(entry);
-            }
-          } else {
-            // Katakana approximation or phonetic presentation for names / unmapped words
-            translatedWords.push(word);
-            romajiWords.push(word);
-          }
-        });
-
-        jaLine = translatedWords.join(" ");
-        romajiLine = romajiWords.join(" ");
-      }
-
-      translatedLines.push(jaLine || trimmed);
-      romajiLines.push(romajiLine || trimmed);
-    });
-
-    return {
-      originalText: text,
-      translatedText: translatedLines.join("\n"),
-      romaji: romajiLines.join("\n"),
-      sourceLang: "en",
-      targetLang: "ja",
-    };
-  }
-
-  // Fallback for other languages
-  return {
-    originalText: text,
-    translatedText: text,
-    sourceLang: "en",
-    targetLang,
-  };
 }

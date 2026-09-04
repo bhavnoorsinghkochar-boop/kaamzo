@@ -92,9 +92,7 @@ export const Header: React.FC = () => {
 
     applyGoogleTranslateLanguage(lang);
 
-    if (lang === "ja") {
-      speak("言語を日本語に変更しました");
-    } else if (lang === "hi") {
+    if (lang === "hi") {
       speak("भाषा बदलकर हिंदी कर दी गई है");
     } else if (lang === "pa") {
       speak("ਭਾਸ਼ਾ ਪੰਜਾਬੀ ਵਿੱਚ ਬਦਲੀ ਗਈ ਹੈ");
@@ -114,7 +112,6 @@ export const Header: React.FC = () => {
   };
 
   const getLangDisplayName = (lang: Language) => {
-    if (lang === "ja") return "日本語";
     if (lang === "hi") return "हिन्दी";
     if (lang === "pa") return "ਪੰਜਾਬੀ";
     return "EN";
@@ -310,22 +307,6 @@ export const Header: React.FC = () => {
               >
                 <span> {t("ਪੰਜਾਬੀ (Punjabi)")} </span>
                 {currentLanguage === "pa" && (
-                  <Check className="w-4 h-4 text-amber-600 dark:text-[#FCD33F]" />
-                )}
-              </button>
-              <button
-                onClick={() => handleLangChange("ja")}
-                className={`w-full px-3.5 py-2.5 text-left text-xs font-semibold flex items-center justify-between transition border-t border-slate-100 dark:border-[#333333] ${
-                  currentLanguage === "ja"
-                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-[#FFE57F] font-bold"
-                    : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#2E2E2E]"
-                }`}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span>🇯🇵</span>
-                  <span>{t("日本語 (Japanese)")}</span>
-                </div>
-                {currentLanguage === "ja" && (
                   <Check className="w-4 h-4 text-amber-600 dark:text-[#FCD33F]" />
                 )}
               </button>

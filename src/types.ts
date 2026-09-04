@@ -1,7 +1,7 @@
 export type AppRole =
   "select_role" | "worker" | "customer" | "admin" | "pitch_deck";
 
-export type Language = "en" | "hi" | "pa" | "ja";
+export type Language = "en" | "hi" | "pa";
 
 export type TradeType =
   | "Mason"

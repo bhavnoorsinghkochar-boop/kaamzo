@@ -27,17 +27,25 @@
         if (window.google && window.google.translate) {
           new window.google.translate.TranslateElement({
             pageLanguage: 'en',
-            includedLanguages: 'en,ja,hi,pa',
+            includedLanguages: 'en,hi,pa',
             layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false
           }, 'google_translate_element');
+
+          // Auto-trigger if a non-English language was previously selected or requested
+          try {
+            var savedLang = localStorage.getItem('kaamzo_language') || (window.__targetGoogleTranslateLang || 'en');
+            if (savedLang && savedLang !== 'en' && typeof window.__applyGoogleTranslate === 'function') {
+              window.__applyGoogleTranslate(savedLang);
+            }
+          } catch(e) {}
         }
       }
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
   </head>
   <body class="font-sans antialiased">
-    <div id="google_translate_element" style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;" aria-hidden="true"></div>
+    <div id="google_translate_element" style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;" aria-hidden="true"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
