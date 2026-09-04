@@ -287,3 +287,25 @@
   }
 }
 
+/* Google Translate Integration Styles */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+body {
+  top: 0px !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+

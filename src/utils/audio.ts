@@ -205,13 +205,15 @@ export const playSound = (
   }
 };
 
-export const speakText = (text: string, lang: "en" | "hi" | "pa" = "hi") => {
+export const speakText = (text: string, lang: "en" | "hi" | "pa" | "ja" = "hi") => {
   if (!("speechSynthesis" in window)) return;
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
 
-    if (lang === "hi") {
+    if (lang === "ja") {
+      utterance.lang = "ja-JP";
+    } else if (lang === "hi") {
       utterance.lang = "hi-IN";
     } else if (lang === "pa") {
       utterance.lang = "pa-IN";

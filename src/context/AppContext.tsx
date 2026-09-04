@@ -42,6 +42,7 @@ import {
   OperationType,
 } from "../lib/firestoreSync";
 import { sendOtpToGmail } from "../lib/gmailService";
+import { applyGoogleTranslateLanguage } from "../utils/googleTranslate";
 export interface UserAccount {
   id: string;
   phone: string;
@@ -492,11 +493,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const setCurrentLanguage = (lang: Language) => {
     setCurrentLanguageState(lang);
     i18n.changeLanguage(lang);
+    applyGoogleTranslateLanguage(lang);
   };
 
   useEffect(() => {
     localStorage.setItem("kaamzo_language", currentLanguage);
     i18n.changeLanguage(currentLanguage);
+    applyGoogleTranslateLanguage(currentLanguage);
   }, [currentLanguage]);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
