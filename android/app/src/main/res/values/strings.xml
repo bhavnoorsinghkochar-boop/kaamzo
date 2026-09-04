@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dihadi</string>
+    <string name="title_activity_main">Dihadi</string>
+    <string name="package_name">com.kaamzo.dihadi</string>
+    <string name="custom_url_scheme">com.kaamzo.dihadi</string>
+</resources>

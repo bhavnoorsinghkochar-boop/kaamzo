@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "workers": {
+      "title": "Worker Profile",
+      "description": "Daily wage workers registered on Dihadi Work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "avatar": { "type": "string" },
+        "primaryTrade": { "type": "string" },
+        "secondaryTrades": { "type": "array", "items": { "type": "string" } },
+        "dailyRate": { "type": "number" },
+        "experienceYears": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "isPhoneVerified": { "type": "boolean" },
+        "isEmailVerified": { "type": "boolean" },
+        "isAvailable": { "type": "boolean" },
+        "aadhaarNumberMasked": { "type": "string" },
+        "area": { "type": "string" },
+        "city": { "type": "string" },
+        "upiId": { "type": "string" },
+        "completedJobsCount": { "type": "number" },
+        "totalEarnings": { "type": "number" },
+        "gpsLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "primaryTrade", "dailyRate"]
+    },
+    "jobs": {
+      "title": "Job Broadcast / Booking",
+      "description": "Daily wage work postings created on Dihadi Connect and dispatched to Dihadi Work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "trade": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "customerAddress": { "type": "string" },
+        "area": { "type": "string" },
+        "city": { "type": "string" },
+        "status": { "type": "string" },
+        "dailyWage": { "type": "number" },
+        "platformFee": { "type": "number" },
+        "workerPayout": { "type": "number" },
+        "isPaid": { "type": "boolean" },
+        "assignedWorkerId": { "type": "string" },
+        "assignedWorkerName": { "type": "string" },
+        "assignedWorkerPhone": { "type": "string" },
+        "assignedWorkerUpi": { "type": "string" },
+        "ratingGiven": { "type": "number" },
+        "reviewGiven": { "type": "string" },
+        "ratingTags": { "type": "array", "items": { "type": "string" } },
+        "jobGps": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "workerGps": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "trade", "customerName", "dailyWage", "status"]
+    },
+    "verifications": {
+      "title": "KYC Verification Queue",
+      "description": "Aadhaar and identity verification documents submitted for Dihadi Control approval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "workerId": { "type": "string" },
+        "workerName": { "type": "string" },
+        "workerPhone": { "type": "string" },
+        "trade": { "type": "string" },
+        "aadhaarNumber": { "type": "string" },
+        "documentUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "submittedAt": { "type": "string" },
+        "reviewedAt": { "type": "string" },
+        "rejectionReason": { "type": "string" }
+      },
+      "required": ["id", "workerId", "workerName", "aadhaarNumber", "status"]
+    },
+    "sosAlerts": {
+      "title": "SOS Emergency Alerts",
+      "description": "Emergency dispatches triggered by workers or customers monitored in Dihadi Control",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "triggeredBy": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "status": { "type": "string" },
+        "gps": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        }
+      },
+      "required": ["id", "triggeredBy", "role", "timestamp", "status"]
+    }
+  }
+}

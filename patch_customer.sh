@@ -1,0 +1,1 @@
+sed -i 's/<span className="text-\[10px\] text-amber-700 font-bold block">100% Escrow Held<\/span>/{job.escrowStatus === '\''pending'\'' ? (<span className="text-[10px] text-red-600 font-bold block">Payment Pending<\/span>) : (<span className="text-[10px] text-amber-700 font-bold block">100% Escrow Held<\/span>)}/g' src/components/customer/CustomerApp.tsx

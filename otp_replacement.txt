@@ -1,0 +1,11 @@
+                  {job.escrowStatus === 'pending' ? (
+                    <div className="bg-amber-100 p-4 rounded-2xl border border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="font-black text-slate-900 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-amber-600" /> Approve & Fund Escrow</h4>
+                        <p className="text-xs text-slate-600 mt-1">Worker is waiting for your approval. Deposit the daily wage into escrow to generate the start OTP.</p>
+                      </div>
+                      <button type="button" onClick={() => setPrepayBooking({ type: 'approve_escrow', jobId: job.id, amount: job.dailyWage * job.durationDays, workerName: job.assignedWorkerName || 'Worker' })} className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition shadow-sm whitespace-nowrap">
+                        Pay ₹{job.dailyWage * job.durationDays} to Escrow
+                      </button>
+                    </div>
+                  ) : (job.status === 'accepted' || job.status === 'broadcast' || job.status === 'in_progress') && (

@@ -1,0 +1,9 @@
+  const processPrepaidBooking = () => {
+    if (!prepayBooking || !currentCustomer) return;
+    
+    if (prepayBooking.type === 'approve_escrow' && prepayBooking.jobId) {
+      approveAndFundEscrow(prepayBooking.jobId);
+    }
+    
+    setPrepayBooking(null);
+  };
